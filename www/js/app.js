@@ -21,58 +21,49 @@ angular.module('app', ['ionic', 'app.controllers', 'app.routes', 'app.services',
   });
 })
 
-.run(function($ionicPlatform, $cordovaPush, $rootScope) {
-  $ionicPlatform.ready(function() {     
-    //PUT IN PUSH
-    if(ionic.Platform.isWebView()) {
-         
-        var androidConfig = {
-            "senderID":"469201422848",
-        };
-         
-        androidConfig.ecb = "window.onNotification"
-         
-        window.onNotification = function(e) {
-          switch( e.event )
-          {
-              case 'registered':
-                  if ( e.regid.length > 0 )
-                  {
-                      //DEVICE REGISTRATION ID
-                      alert(e.regid);
-                  }
-                  break;
- 
-              case 'message':
-                  alert(e.message);
-                   
-                  //We send an angular broadcast notification
-                  var elem = angular.element(document.querySelector('[ng-app]'));
-                  var rootScope = elem.injector().get('$rootScope');
-                  rootScope.$broadcast('pushNotificationReceived', e);
-                  break;
- 
-              case 'error':
-                  alert(e.msg);
-                  break;
- 
-              default:
-                    alert('unknown');
-                  break;
+.run(function($cordovaPush) {
+
+  var androidConfig = {
+    "senderID": "469201422848",
+  };
+
+  document.addEventListener("deviceready", function(){
+    $cordovaPush.register(androidConfig).then(function(result) {
+      // Success
+    }, function(err) {
+      // Error
+    })
+
+    $rootScope.$on('$cordovaPush:notificationReceived', function(event, notification) {
+      switch(notification.event) {
+        case 'registered':
+          if (notification.regid.length > 0 ) {
+            alert('registration ID = ' + notification.regid);
           }
-        };
-         
-        //DEVICE REGISTER
-        $cordovaPush.register(androidConfig).then(function(result) {
-            alert(result);
-          }, function(err) {
-              alert(err);
-          });
-           
-        $rootScope.$on('pushNotificationReceived', function(event, notification) {
-            //WE RECEIVE THE BROADCAST
-              alert("received");
-          });
-    }
-  });
-})
+          break;
+
+        case 'message':
+          // this is the actual push notification. its format depends on the data model from the push server
+          alert('message = ' + notification.message + ' msgCount = ' + notification.msgcnt);
+          break;
+
+        case 'error':
+          alert('GCM error = ' + notification.msg);
+          break;
+
+        default:
+          alert('An unknown GCM event has occurred');
+          break;
+      }
+    });
+
+
+    // WARNING: dangerous to unregister (results in loss of tokenID)
+    $cordovaPush.unregister(options).then(function(result) {
+      // Success!
+    }, function(err) {
+      // Error
+    })
+
+  }, false);
+});
