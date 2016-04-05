@@ -5,7 +5,7 @@
 // the 2nd parameter is an array of 'requires'
 // 'starter.services' is found in services.js
 // 'starter.controllers' is found in controllers.js
-angular.module('app', ['ionic', 'app.controllers', 'app.routes', 'app.services', 'app.directives'])
+angular.module('app', ['ionic', 'app.controllers', 'app.routes', 'app.services', 'app.directives', 'ngCordova'])
 
 .run(function($ionicPlatform) {
   $ionicPlatform.ready(function() {
@@ -17,6 +17,62 @@ angular.module('app', ['ionic', 'app.controllers', 'app.routes', 'app.services',
     if(window.StatusBar) {
       // org.apache.cordova.statusbar required
       StatusBar.styleDefault();
+    }
+  });
+})
+
+.run(function($ionicPlatform, $cordovaPush, $rootScope) {
+  $ionicPlatform.ready(function() {     
+    //PUT IN PUSH
+    if(ionic.Platform.isWebView()) {
+         
+        var androidConfig = {
+            "senderID":"469201422848",
+        };
+         
+        androidConfig.ecb = "window.onNotification"
+         
+        window.onNotification = function(e) {
+          switch( e.event )
+          {
+              case 'registered':
+                  if ( e.regid.length > 0 )
+                  {
+                      //DEVICE REGISTRATION ID
+                      alert(e.regid);
+                  }
+                  break;
+ 
+              case 'message':
+                  alert(e.message);
+                   
+                  //We send an angular broadcast notification
+                  var elem = angular.element(document.querySelector('[ng-app]'));
+                  var rootScope = elem.injector().get('$rootScope');
+                  rootScope.$broadcast('pushNotificationReceived', e);
+                  break;
+ 
+              case 'error':
+                  alert(e.msg);
+                  break;
+ 
+              default:
+                    alert('unknown');
+                  break;
+          }
+        };
+         
+        //DEVICE REGISTER
+        $cordovaPush.register(androidConfig).then(function(result) {
+            alert(result);
+          }, function(err) {
+              alert(err);
+          });
+           
+        $rootScope.$on('pushNotificationReceived', function(event, notification) {
+            //WE RECEIVE THE BROADCAST
+              alert("received");
+          });
     }
   });
 })
